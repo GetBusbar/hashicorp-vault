@@ -1,0 +1,111 @@
+# Bespoke ci.yml for THIS repo, NOT calling the shared GetBusbar/busbar/.github/workflows/plugin-ci.yml
+# reusable workflow — deliberately, for now. That shared workflow's `service:` input only supports
+# `none | postgres | redis` as of this writing; this plugin's real end-to-end test needs a live
+# `hashicorp/vault` dev-mode service container, so a `vault` option was added to plugin-ci.yml as a
+# SEPARATE change (committed on a `feat/plugin-ci-vault-support` branch in the busbarAI checkout, not
+# yet pushed/merged — see that repo's branch and this repo's own commit history for the rationale).
+# Once that lands and is tagged, this file should be replaced with the same thin `uses:` wrapper
+# auth-oidc/store-sqlite/store-postgres/store-redis use, with `service: vault`.
+#
+# Until then, this file hand-rolls the same stages plugin-ci.yml runs (checkout plugin + sibling
+# busbarAI, fmt/build/clippy/test, sibling-checkout test, signoff pack) plus its own `vault:` service
+# block — matching the shape busbarAI's own `.github/workflows/ci.yml` already uses for its in-repo
+# live-Vault tests (VAULT_DEV_ROOT_TOKEN_ID=root, port 8200, a real `/v1/sys/health` healthcheck), and
+# the store-postgres/store-redis hand-written-then-later-consolidated pattern before consolidation.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  BUSBAR_REF: 1.5.0-dev
+
+jobs:
+  build-test-signoff:
+    name: build, test, clippy, fmt, signoff
+    runs-on: ubuntu-latest
+    services:
+      # Real Vault dev-mode server for the live-Vault e2e test (BUSBAR_TEST_VAULT_ADDR /
+      # BUSBAR_TEST_VAULT_TOKEN, set on the Test steps below) — same hard-fail-under-CI-if-unset
+      # discipline busbarAI's own ci.yml applies to its in-repo equivalent test.
+      vault:
+        image: hashicorp/vault
+        env:
+          VAULT_DEV_ROOT_TOKEN_ID: root
+        ports:
+          - 8200:8200
+        options: >-
+          --cap-add=IPC_LOCK
+          --health-cmd "wget -qO- http://127.0.0.1:8200/v1/sys/health"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout the plugin
+        uses: actions/checkout@v7
+        with:
+          path: plugin
+
+      - name: Checkout busbar (sibling path dependency)
+        uses: actions/checkout@v7
+        with:
+          repository: GetBusbar/busbar
+          ref: ${{ env.BUSBAR_REF }}
+          path: busbarAI
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+
+      - name: cargo fmt --check
+        working-directory: plugin
+        run: cargo fmt --all -- --check
+
+      - name: cargo build
+        working-directory: plugin
+        run: cargo build --all-targets
+
+      - name: cargo clippy
+        working-directory: plugin
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: cargo test
+        working-directory: plugin
+        env:
+          BUSBAR_TEST_VAULT_ADDR: http://127.0.0.1:8200
+          BUSBAR_TEST_VAULT_TOKEN: root
+        run: cargo test
+
+      - name: cargo test (sibling busbarAI checkout — this backend's own monorepo integration test)
+        working-directory: busbarAI
+        env:
+          BUSBAR_TEST_VAULT_ADDR: http://127.0.0.1:8200
+          BUSBAR_TEST_VAULT_TOKEN: root
+        run: cargo test -p busbar-secret-vault -p busbar-secret-vault-plugin
+
+      - name: Build busbar-plugin-pack (from the sibling checkout)
+        working-directory: busbarAI
+        run: cargo build --release -p busbar-plugin-pack
+
+      - name: SIGNOFF — pack the plugin, prove the manifest/tarball shape is valid now
+        run: |
+          set -euo pipefail
+          lib="plugin/target/debug/libbusbar_secret_vault_plugin.so"
+          [ -f "$lib" ] || { echo "expected cdylib not found at $lib" >&2; ls -la plugin/target/debug/ >&2; exit 1; }
+          busbarAI/target/release/busbar-plugin-pack pack \
+            --lib "$lib" \
+            --name "busbar-secret-vault-plugin" \
+            --alias "vault" \
+            --kind "secret" \
+            --version "0.0.0-ci" \
+            --publisher busbar \
+            --description "CI signoff pack for busbar-secret-vault-plugin" \
+            --license Apache-2.0 \
+            --out /tmp/signoff.tar.gz \
+            --allow-unsigned
+          echo "packed OK:"
+          ls -l /tmp/signoff.tar.gz
