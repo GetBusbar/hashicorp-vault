@@ -40,20 +40,24 @@ or an on-disk file.
 
 ## Design
 
-This repo is a thin adapter (`src/lib.rs`, ~40 lines): it turns the
-engine's JSON open-time config into a real `VaultSecretModule` and hands
-the trait object to the SDK, which emits the extern-C symbols the loader
-resolves. All the actual Vault logic (the KV v2 HTTP client, field
-addressing, error classification) lives in the `busbar-secret-vault`
-library crate this plugin wraps (a sibling crate in the `busbarAI`
-monorepo; see [Dependencies](#dependencies) below), so a custom build can
-also link that logic statically instead of going through the plugin ABI.
+This repo brings 100% of what it needs — it is a 2-crate Cargo workspace,
+not a thin adapter pointing back at busbarAI for its real logic:
+
+- **`secret-vault/`** (crate `busbar-secret-vault`) — the real Vault KV v2
+  HTTP client: field addressing, response-size capping, and 404/403/5xx
+  error classification. Usable statically, independent of the plugin ABI.
+- **`secret-vault-plugin/`** (crate `busbar-secret-vault-plugin`, `src/lib.rs`
+  ~45 lines) — the thin `cdylib` adapter: turns the engine's JSON
+  open-time config into a real `VaultSecretModule` (from the sibling
+  `secret-vault` crate, a same-repo path dependency) and hands the trait
+  object to the SDK, which emits the extern-C symbols the loader
+  resolves.
 
 Auth is deliberately scoped to exactly one Vault auth method: a
 pre-obtained token sent as `X-Vault-Token` — Vault's simplest and most
 universal scheme, and the right initial surface for a first version.
 AppRole/Kubernetes login flows are a natural future extension of
-`busbar-secret-vault` itself, not this thin ABI adapter.
+`busbar-secret-vault` itself, not the thin ABI adapter.
 
 ## Build
 
@@ -63,26 +67,30 @@ a sibling checkout of `busbarAI` at `../busbarAI` (see
 [Dependencies](#dependencies) below).
 
 ```sh
-cargo build --release      # cdylib: target/release/libbusbar_secret_vault_plugin.{so,dylib}
-cargo test                 # unit tests + the end-to-end loader/Vault test (see tests/e2e.rs)
+cargo build --release      # workspace build; cdylib at target/release/libbusbar_secret_vault_plugin.{so,dylib}
+cargo test                 # both crates' unit tests + the end-to-end loader/Vault test (see secret-vault-plugin/tests/e2e.rs)
 cargo clippy --all-targets -- -D warnings
 cargo fmt --all -- --check
 ```
 
 ## Dependencies
 
-This crate depends on `busbar-api`, `busbar-plugin-sdk`, and
-`busbar-secret-vault` (and, as dev-dependencies for the end-to-end test,
-`busbar-plugin-loader` and `busbar-plugin-abi`) from the
-[busbarAI](https://github.com/GetBusbar/busbarAI) monorepo. Because
-busbarAI is not yet public, `Cargo.toml` points at these as **local path
-dependencies** (`../busbarAI/crates/...`), which means this repo expects
-to be checked out as a sibling of `busbarAI`:
+`secret-vault-plugin` depends on `busbar-secret-vault` as a **same-repo**
+path dependency (`../secret-vault`) — the real logic lives in this repo,
+not busbarAI. Only the core-engine contracts every plugin depends on the
+same way — `busbar-api`, `busbar-plugin-sdk` (and, as dev-dependencies for
+the end-to-end test, `busbar-plugin-loader` and `busbar-plugin-abi`) —
+still reach into the [busbarAI](https://github.com/GetBusbar/busbarAI)
+monorepo. Because busbarAI is not yet public, `Cargo.toml` points at these
+as **local path dependencies** (`../../busbarAI/crates/...`), which means
+this repo expects to be checked out as a sibling of `busbarAI`:
 
 ```
 some-parent-dir/
 ├── busbarAI/
 └── secret-vault/
+    ├── secret-vault/
+    └── secret-vault-plugin/
 ```
 
 This is an interim measure — once busbarAI ships publicly, these should
@@ -178,10 +186,13 @@ never an empty `Ok`.
 
 ## Tests
 
-`cargo test` runs both this crate's own hermetic unit tests (`src/lib.rs`
-— covering `open()`'s config-parsing responsibility: empty/malformed/
+`cargo test` (run at the workspace root) runs `secret-vault`'s own
+hermetic unit tests (reference-parsing, the response-size cap, and —
+gated on `BUSBAR_TEST_VAULT_ADDR`/`BUSBAR_TEST_VAULT_TOKEN` — a real
+round trip), `secret-vault-plugin`'s own hermetic unit tests (covering
+`open()`'s config-parsing responsibility: empty/malformed/
 missing-required-field/unknown-field config, all without any network
-I/O) and the end-to-end test in `tests/e2e.rs`.
+I/O), and the end-to-end test in `secret-vault-plugin/tests/e2e.rs`.
 
 The end-to-end test is NOT a stub: it seeds a real secret directly into a
 real Vault dev-mode server via a raw HTTP PUT, then `dlopen`s the

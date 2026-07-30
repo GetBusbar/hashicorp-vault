@@ -1,33 +1,16 @@
 # SPDX-License-Identifier: Apache-2.0
-[package]
-name = "busbar-secret-vault-plugin"
-version = "1.0.0"
-publish = false            # first-party signed cdylib, shipped as a packed/signed tarball, not to crates.io
-edition = "2021"
-rust-version = "1.97"
-description = "The HashiCorp Vault secret backend as a droppable busbar plugin — a cdylib exporting the secret C ABI. Drop it in the plugins folder, add secrets.<alias>.settings: { addr, token }, and reference secrets as { module: <alias>, settings: { path: \"kv/data/name#field\" } }."
-license = "Apache-2.0"
-
-[lib]
-crate-type = ["cdylib", "rlib"]   # cdylib for the C ABI delivery; rlib so the unit tests / e2e test can exercise it as a normal crate too
-
-[dependencies]
-# INTERIM: busbarAI isn't public yet, so these are local path dependencies into a sibling checkout of
-# the monorepo. Once busbarAI ships publicly these should become git (pinned rev/tag) or crates.io
-# dependencies instead — same pattern being applied to webrequest-hook's busbar-plugin-sdk dependency.
-busbar-api = { path = "../busbarAI/crates/api" }
-busbar-plugin-sdk = { path = "../busbarAI/crates/plugin-sdk" }
-busbar-secret-vault = { path = "../busbarAI/crates/secret-vault" }
-serde_json = "1"
-
-[dev-dependencies]
-# INTERIM local path deps, same rationale as above — these are dev-only. The end-to-end test loads the
-# built cdylib over the real loader ABI seam and seeds/reads a secret against a real Vault dev-mode
-# server, so `busbar-secret-vault`'s own HTTP client does a genuine round trip rather than a stub.
-busbar-plugin-loader = { path = "../busbarAI/crates/plugin-loader" }
-busbar-plugin-abi = { path = "../busbarAI/crates/plugin-abi" }
-# Same reqwest 0.12 major + blocking client shape busbar-secret-vault's own client uses — the e2e
-# test's setup step seeds a secret into Vault via a raw HTTP PUT before reading it back through the
-# dlopen'd plugin.
-reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "blocking"] }
-serde_json = "1"
+#
+# This repo brings 100% of what it needs: the real HashiCorp Vault KV v2 client logic
+# (secret-vault, crate busbar-secret-vault) and the thin dlopen ABI adapter that packages it as a
+# busbar plugin (secret-vault-plugin, crate busbar-secret-vault-plugin) both live here, as a
+# same-repo Cargo workspace — not split across this repo and busbarAI. Only busbar-api/
+# busbar-plugin-sdk (and, for the adapter's dev-dependencies, busbar-plugin-loader/
+# busbar-plugin-abi) still reach into a sibling busbarAI checkout, since those are core-engine
+# contracts every plugin depends on the same way. Mirrors GetBusbar/auth-oidc's restructure
+# (commit 1875b2f) exactly.
+[workspace]
+resolver = "2"
+members = [
+    "secret-vault",
+    "secret-vault-plugin",
+]

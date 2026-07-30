@@ -35,28 +35,36 @@ cargo fmt --all -- --check                   # format before committing
 ```
 
 Without a running Vault, `cargo test` still runs every hermetic unit test; the
-end-to-end test in `tests/e2e.rs` self-skips locally with a message (it hard-fails
-instead of skipping under CI — see the README's [Tests](README.md#tests) section).
+end-to-end test in `secret-vault-plugin/tests/e2e.rs` self-skips locally with a
+message (it hard-fails instead of skipping under CI — see the README's
+[Tests](README.md#tests) section).
 
 ## Before you open a pull request
 
 1. **`cargo fmt --all`** — code must be rustfmt-clean.
 2. **`cargo clippy --all-targets -- -D warnings`** — no warnings.
 3. **`cargo build && cargo test`** (against a real local Vault, see above) — green,
-   including the end-to-end `dlopen`/Vault test in `tests/e2e.rs` — it must never be
-   allowed to quietly skip under CI.
+   including the end-to-end `dlopen`/Vault test in `secret-vault-plugin/tests/e2e.rs`
+   — it must never be allowed to quietly skip under CI.
 4. Add or update tests for any behavior change.
 5. Update documentation (`README.md`, doc comments) when you change behavior or config.
 
 ## Architecture
 
-This repo is deliberately a thin adapter (`src/lib.rs`): it turns the engine's
-JSON config into a `VaultConfig`/`VaultSecretModule` and hands the trait object to
-[`busbar-plugin-sdk`](https://github.com/GetBusbar/busbarAI/tree/main/crates/plugin-sdk),
-which emits the C ABI symbols the loader resolves. All the actual Vault logic (the
-KV v2 HTTP client, field addressing, error classification) lives in the
-`busbar-secret-vault` library crate this plugin wraps, in the `busbarAI` monorepo —
-most substantive changes belong there, not here. Changes to this seam deserve
+This repo is a 2-crate workspace, not a thin adapter reaching back into busbarAI
+for its real logic:
+
+- `secret-vault/` (crate `busbar-secret-vault`) — the real Vault KV v2 HTTP
+  client: field addressing, response-size capping, error classification.
+  Most substantive Vault-logic changes belong here.
+- `secret-vault-plugin/` (crate `busbar-secret-vault-plugin`) — the thin
+  `cdylib` adapter: turns the engine's JSON config into a `VaultConfig`/
+  `VaultSecretModule` (from the sibling `secret-vault` crate) and hands the
+  trait object to
+  [`busbar-plugin-sdk`](https://github.com/GetBusbar/busbarAI/tree/main/crates/plugin-sdk),
+  which emits the C ABI symbols the loader resolves.
+
+Changes to the ABI-crossing seam (`secret-vault-plugin/src/lib.rs`) deserve
 extra care: it hands real secret material back across the plugin ABI.
 
 ## Commit & PR conventions
