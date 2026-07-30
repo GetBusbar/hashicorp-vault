@@ -79,6 +79,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "busbar-hashicorp-vault"
+version = "1.0.0"
+dependencies = [
+ "busbar-api",
+ "reqwest",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "busbar-hashicorp-vault-plugin"
+version = "1.0.0"
+dependencies = [
+ "busbar-api",
+ "busbar-hashicorp-vault",
+ "busbar-plugin-abi",
+ "busbar-plugin-loader",
+ "busbar-plugin-sdk",
+ "reqwest",
+ "serde_json",
+]
+
+[[package]]
 name = "busbar-plugin-abi"
 version = "1.5.0"
 dependencies = [
@@ -124,29 +147,6 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2 0.11.0",
-]
-
-[[package]]
-name = "busbar-secret-vault"
-version = "1.0.0"
-dependencies = [
- "busbar-api",
- "reqwest",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "busbar-secret-vault-plugin"
-version = "1.0.0"
-dependencies = [
- "busbar-api",
- "busbar-plugin-abi",
- "busbar-plugin-loader",
- "busbar-plugin-sdk",
- "busbar-secret-vault",
- "reqwest",
- "serde_json",
 ]
 
 [[package]]

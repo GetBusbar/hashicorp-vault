@@ -6,7 +6,7 @@
 # plugin-ci.yml (busbarAI commit d59b8e9, merged to the 1.5.0-dev branch this workflow tracks), so
 # this repo now uses the same thin `uses:` wrapper auth-oidc/store-sqlite/store-postgres/store-redis
 # use, with `service: vault`. No `extra_sibling_test_command` — busbarAI no longer carries
-# crates/secret-vault or crates/secret-vault-plugin in-tree (this repo's own test suite, run above,
+# crates/hashicorp-vault or crates/hashicorp-vault-plugin in-tree (this repo's own test suite, run above,
 # IS the real-Vault-backed proof now; see busbarAI's release-check.sh Phase 3.5 and its removal
 # commit for how the monorepo gates on this repo instead).
 name: ci
@@ -21,7 +21,7 @@ jobs:
   ci:
     uses: GetBusbar/busbar/.github/workflows/plugin-ci.yml@1.5.0-dev
     with:
-      plugin_crate: busbar-secret-vault-plugin
+      plugin_crate: busbar-hashicorp-vault-plugin
       plugin_kind: secret
       plugin_alias: vault
       service: vault

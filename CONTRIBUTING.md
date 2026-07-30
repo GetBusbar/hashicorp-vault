@@ -1,6 +1,6 @@
-# Contributing to secret-vault
+# Contributing to hashicorp-vault
 
-Thanks for your interest in improving `secret-vault`. This document covers how
+Thanks for your interest in improving `hashicorp-vault`. This document covers how
 to build, test, and submit changes.
 
 ## Ground rules
@@ -13,7 +13,7 @@ to build, test, and submit changes.
 
 ## Development setup
 
-`secret-vault` is a Rust `cdylib` plugin. You need a recent stable toolchain
+`hashicorp-vault` is a Rust `cdylib` plugin. You need a recent stable toolchain
 (`rustup` recommended), and — until [busbarAI](https://github.com/GetBusbar/busbarAI)
 ships publicly — a sibling checkout of it at `../busbarAI`, since this crate's
 `Cargo.toml` points at busbar's crates as local path dependencies. See the
@@ -35,7 +35,7 @@ cargo fmt --all -- --check                   # format before committing
 ```
 
 Without a running Vault, `cargo test` still runs every hermetic unit test; the
-end-to-end test in `secret-vault-plugin/tests/e2e.rs` self-skips locally with a
+end-to-end test in `hashicorp-vault-plugin/tests/e2e.rs` self-skips locally with a
 message (it hard-fails instead of skipping under CI — see the README's
 [Tests](README.md#tests) section).
 
@@ -44,7 +44,7 @@ message (it hard-fails instead of skipping under CI — see the README's
 1. **`cargo fmt --all`** — code must be rustfmt-clean.
 2. **`cargo clippy --all-targets -- -D warnings`** — no warnings.
 3. **`cargo build && cargo test`** (against a real local Vault, see above) — green,
-   including the end-to-end `dlopen`/Vault test in `secret-vault-plugin/tests/e2e.rs`
+   including the end-to-end `dlopen`/Vault test in `hashicorp-vault-plugin/tests/e2e.rs`
    — it must never be allowed to quietly skip under CI.
 4. Add or update tests for any behavior change.
 5. Update documentation (`README.md`, doc comments) when you change behavior or config.
@@ -54,17 +54,17 @@ message (it hard-fails instead of skipping under CI — see the README's
 This repo is a 2-crate workspace, not a thin adapter reaching back into busbarAI
 for its real logic:
 
-- `secret-vault/` (crate `busbar-secret-vault`) — the real Vault KV v2 HTTP
+- `hashicorp-vault/` (crate `busbar-hashicorp-vault`) — the real Vault KV v2 HTTP
   client: field addressing, response-size capping, error classification.
   Most substantive Vault-logic changes belong here.
-- `secret-vault-plugin/` (crate `busbar-secret-vault-plugin`) — the thin
+- `hashicorp-vault-plugin/` (crate `busbar-hashicorp-vault-plugin`) — the thin
   `cdylib` adapter: turns the engine's JSON config into a `VaultConfig`/
-  `VaultSecretModule` (from the sibling `secret-vault` crate) and hands the
+  `VaultSecretModule` (from the sibling `hashicorp-vault` crate) and hands the
   trait object to
   [`busbar-plugin-sdk`](https://github.com/GetBusbar/busbarAI/tree/main/crates/plugin-sdk),
   which emits the C ABI symbols the loader resolves.
 
-Changes to the ABI-crossing seam (`secret-vault-plugin/src/lib.rs`) deserve
+Changes to the ABI-crossing seam (`hashicorp-vault-plugin/src/lib.rs`) deserve
 extra care: it hands real secret material back across the plugin ABI.
 
 ## Commit & PR conventions

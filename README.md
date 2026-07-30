@@ -1,10 +1,10 @@
-# secret-vault
+# hashicorp-vault
 
 **This plugin's version: v1.0.0.** (Independently versioned from busbar
 itself — see [Versioning](#versioning) below.)
 
-[![CI](https://github.com/GetBusbar/secret-vault/actions/workflows/ci.yml/badge.svg)](https://github.com/GetBusbar/secret-vault/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/GetBusbar/secret-vault)](https://github.com/GetBusbar/secret-vault/releases)
+[![CI](https://github.com/GetBusbar/hashicorp-vault/actions/workflows/ci.yml/badge.svg)](https://github.com/GetBusbar/hashicorp-vault/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/GetBusbar/hashicorp-vault)](https://github.com/GetBusbar/hashicorp-vault/releases)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
 The first-party, signed `kind: secret` plugin for
@@ -43,13 +43,13 @@ or an on-disk file.
 This repo brings 100% of what it needs — it is a 2-crate Cargo workspace,
 not a thin adapter pointing back at busbarAI for its real logic:
 
-- **`secret-vault/`** (crate `busbar-secret-vault`) — the real Vault KV v2
+- **`hashicorp-vault/`** (crate `busbar-hashicorp-vault`) — the real Vault KV v2
   HTTP client: field addressing, response-size capping, and 404/403/5xx
   error classification. Usable statically, independent of the plugin ABI.
-- **`secret-vault-plugin/`** (crate `busbar-secret-vault-plugin`, `src/lib.rs`
+- **`hashicorp-vault-plugin/`** (crate `busbar-hashicorp-vault-plugin`, `src/lib.rs`
   ~45 lines) — the thin `cdylib` adapter: turns the engine's JSON
   open-time config into a real `VaultSecretModule` (from the sibling
-  `secret-vault` crate, a same-repo path dependency) and hands the trait
+  `hashicorp-vault` crate, a same-repo path dependency) and hands the trait
   object to the SDK, which emits the extern-C symbols the loader
   resolves.
 
@@ -57,7 +57,7 @@ Auth is deliberately scoped to exactly one Vault auth method: a
 pre-obtained token sent as `X-Vault-Token` — Vault's simplest and most
 universal scheme, and the right initial surface for a first version.
 AppRole/Kubernetes login flows are a natural future extension of
-`busbar-secret-vault` itself, not the thin ABI adapter.
+`busbar-hashicorp-vault` itself, not the thin ABI adapter.
 
 ## Build
 
@@ -67,16 +67,16 @@ a sibling checkout of `busbarAI` at `../busbarAI` (see
 [Dependencies](#dependencies) below).
 
 ```sh
-cargo build --release      # workspace build; cdylib at target/release/libbusbar_secret_vault_plugin.{so,dylib}
-cargo test                 # both crates' unit tests + the end-to-end loader/Vault test (see secret-vault-plugin/tests/e2e.rs)
+cargo build --release      # workspace build; cdylib at target/release/libbusbar_hashicorp_vault_plugin.{so,dylib}
+cargo test                 # both crates' unit tests + the end-to-end loader/Vault test (see hashicorp-vault-plugin/tests/e2e.rs)
 cargo clippy --all-targets -- -D warnings
 cargo fmt --all -- --check
 ```
 
 ## Dependencies
 
-`secret-vault-plugin` depends on `busbar-secret-vault` as a **same-repo**
-path dependency (`../secret-vault`) — the real logic lives in this repo,
+`hashicorp-vault-plugin` depends on `busbar-hashicorp-vault` as a **same-repo**
+path dependency (`../hashicorp-vault`) — the real logic lives in this repo,
 not busbarAI. Only the core-engine contracts every plugin depends on the
 same way — `busbar-api`, `busbar-plugin-sdk` (and, as dev-dependencies for
 the end-to-end test, `busbar-plugin-loader` and `busbar-plugin-abi`) —
@@ -88,9 +88,9 @@ this repo expects to be checked out as a sibling of `busbarAI`:
 ```
 some-parent-dir/
 ├── busbarAI/
-└── secret-vault/
-    ├── secret-vault/
-    └── secret-vault-plugin/
+└── hashicorp-vault/
+    ├── hashicorp-vault/
+    └── hashicorp-vault-plugin/
 ```
 
 This is an interim measure — once busbarAI ships publicly, these should
@@ -106,11 +106,11 @@ in busbarAI for the full reference. In short:
 
 ```sh
 BUSBAR_SIGN_KEY=<signing key> busbar-plugin-pack pack \
-    --lib target/release/libbusbar_secret_vault_plugin.so \
-    --name busbar-secret-vault --alias vault --kind secret \
+    --lib target/release/libbusbar_hashicorp_vault_plugin.so \
+    --name busbar-hashicorp-vault --alias vault --kind secret \
     --version 1.0.0 --publisher busbar \
     --license Apache-2.0 \
-    --out busbar-secret-vault-1.0.0-x86_64-linux.tar.gz
+    --out busbar-hashicorp-vault-1.0.0-x86_64-linux.tar.gz
 ```
 
 For local development without a signing key, `busbar-plugin-pack pack
@@ -186,17 +186,17 @@ never an empty `Ok`.
 
 ## Tests
 
-`cargo test` (run at the workspace root) runs `secret-vault`'s own
+`cargo test` (run at the workspace root) runs `hashicorp-vault`'s own
 hermetic unit tests (reference-parsing, the response-size cap, and —
 gated on `BUSBAR_TEST_VAULT_ADDR`/`BUSBAR_TEST_VAULT_TOKEN` — a real
-round trip), `secret-vault-plugin`'s own hermetic unit tests (covering
+round trip), `hashicorp-vault-plugin`'s own hermetic unit tests (covering
 `open()`'s config-parsing responsibility: empty/malformed/
 missing-required-field/unknown-field config, all without any network
-I/O), and the end-to-end test in `secret-vault-plugin/tests/e2e.rs`.
+I/O), and the end-to-end test in `hashicorp-vault-plugin/tests/e2e.rs`.
 
 The end-to-end test is NOT a stub: it seeds a real secret directly into a
 real Vault dev-mode server via a raw HTTP PUT, then `dlopen`s the
-actually-built `busbar-secret-vault-plugin` cdylib over
+actually-built `busbar-hashicorp-vault-plugin` cdylib over
 `busbar-plugin-loader`'s real `kind: secret` C ABI seam — the same seam
 busbar's engine uses — and reads that secret back through it. It proves,
 against a genuine Vault server:

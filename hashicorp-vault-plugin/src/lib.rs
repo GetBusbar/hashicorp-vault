@@ -8,12 +8,12 @@
 //! path: "kv/data/openai#api_key" } }`.
 //!
 //! All the Vault logic (the KV v2 HTTP client, field addressing, error classification) lives in the
-//! `busbar-secret-vault` `lib` crate (usable statically too). Here we only adapt the engine's JSON
+//! `busbar-hashicorp-vault` `lib` crate (usable statically too). Here we only adapt the engine's JSON
 //! open-time config into a `VaultConfig` and hand the trait object to the SDK, which emits the
 //! extern-C symbols the loader resolves — mirroring `busbar-auth-oidc-plugin`'s `open()` exactly.
 
 use busbar_api::SecretModule;
-use busbar_secret_vault::{VaultConfig, VaultSecretModule};
+use busbar_hashicorp_vault::{VaultConfig, VaultSecretModule};
 
 /// Construct a Vault secret module from the JSON config the engine passes through `open` — the
 /// `secrets.<module>.settings` map. Shape:
@@ -33,9 +33,9 @@ use busbar_secret_vault::{VaultConfig, VaultSecretModule};
 /// failure to every `resolve()` call.
 fn open(cfg: &str) -> Result<Box<dyn SecretModule>, String> {
     let cfg: VaultConfig = if cfg.trim().is_empty() {
-        return Err("secret-vault plugin requires config (addr, token); none provided".to_string());
+        return Err("hashicorp-vault plugin requires config (addr, token); none provided".to_string());
     } else {
-        serde_json::from_str(cfg).map_err(|e| format!("invalid secret-vault plugin config: {e}"))?
+        serde_json::from_str(cfg).map_err(|e| format!("invalid hashicorp-vault plugin config: {e}"))?
     };
     Ok(Box::new(VaultSecretModule::new(&cfg)?))
 }

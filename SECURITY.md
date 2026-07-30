@@ -8,7 +8,7 @@ requests, or discussions.**
 Instead, report privately through either channel:
 
 - Email **security@getbusbar.com**, or
-- GitHub's [private vulnerability reporting](https://github.com/GetBusbar/secret-vault/security/advisories/new)
+- GitHub's [private vulnerability reporting](https://github.com/GetBusbar/hashicorp-vault/security/advisories/new)
   (the **Security** tab on this repository).
 
 Please include:
@@ -20,13 +20,13 @@ Please include:
 
 We aim to **acknowledge your report within 48 hours**, work with you on a fix, and
 coordinate disclosure timing. Confirmed vulnerabilities are published as
-[GitHub Security Advisories](https://github.com/GetBusbar/secret-vault/security/advisories),
+[GitHub Security Advisories](https://github.com/GetBusbar/hashicorp-vault/security/advisories),
 through which we request and issue **CVE** identifiers. We credit reporters who wish to be
 credited once a fix is released.
 
 ## Scope
 
-`secret-vault` is a `kind: secret` busbar plugin: it is the seam that resolves a
+`hashicorp-vault` is a `kind: secret` busbar plugin: it is the seam that resolves a
 config secret **reference** (`{ module: vault, settings: { path: ... } }`) into the
 real secret bytes busbar hands to the rest of the engine — provider API keys, the
 admin token, TLS key material. A defect here can leak secret material, resolve the
@@ -44,7 +44,7 @@ interest include:
 - A load-time config error surfacing as a silent success instead of a clean `Err`
   across the plugin ABI.
 - Response-size handling that allows a hostile or misbehaving Vault endpoint to
-  exhaust memory (see `MAX_VAULT_RESPONSE_BYTES` in `busbar-secret-vault`).
+  exhaust memory (see `MAX_VAULT_RESPONSE_BYTES` in `busbar-hashicorp-vault`).
 
 See busbar's own [threat model](https://github.com/GetBusbar/busbar/blob/main/THREAT_MODEL.md)
 for the trust boundaries this plugin operates inside.

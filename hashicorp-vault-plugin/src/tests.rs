@@ -4,7 +4,7 @@
 //! Unit tests for THIS crate's own responsibility: adapting the engine's JSON config into a real Vault
 //! module. Hermetic — no network (a valid `addr`/`token` pair only builds an HTTP client; it never
 //! connects until `resolve()` is called). This crate owns config-parsing coverage only, not the Vault
-//! HTTP/KV-v2 logic itself, which is `busbar-secret-vault`'s own job. The real over-the-ABI, real-Vault
+//! HTTP/KV-v2 logic itself, which is `busbar-hashicorp-vault`'s own job. The real over-the-ABI, real-Vault
 //! success path lives in this crate's own `tests/e2e.rs`.
 
 use super::open;
@@ -39,7 +39,7 @@ fn whitespace_only_config_is_rejected() {
 fn malformed_json_is_rejected() {
     let err = expect_err(open("{ this is not json"));
     assert!(
-        err.contains("invalid secret-vault plugin config"),
+        err.contains("invalid hashicorp-vault plugin config"),
         "error should name the config as invalid: {err}"
     );
 }
@@ -50,7 +50,7 @@ fn config_missing_addr_is_rejected() {
     // is also on, so this proves the missing-required-field path specifically, not a stray typo.
     let err = expect_err(open(r#"{"token":"root"}"#));
     assert!(
-        err.contains("invalid secret-vault plugin config"),
+        err.contains("invalid hashicorp-vault plugin config"),
         "got: {err}"
     );
 }
@@ -59,7 +59,7 @@ fn config_missing_addr_is_rejected() {
 fn config_missing_token_is_rejected() {
     let err = expect_err(open(r#"{"addr":"http://127.0.0.1:8200"}"#));
     assert!(
-        err.contains("invalid secret-vault plugin config"),
+        err.contains("invalid hashicorp-vault plugin config"),
         "got: {err}"
     );
 }
@@ -72,7 +72,7 @@ fn unknown_config_field_is_rejected() {
         r#"{"addr":"http://127.0.0.1:8200","token":"root","bogus_field":true}"#,
     ));
     assert!(
-        err.contains("invalid secret-vault plugin config"),
+        err.contains("invalid hashicorp-vault plugin config"),
         "got: {err}"
     );
 }

@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # This repo brings 100% of what it needs: the real HashiCorp Vault KV v2 client logic
-# (secret-vault, crate busbar-secret-vault) and the thin dlopen ABI adapter that packages it as a
-# busbar plugin (secret-vault-plugin, crate busbar-secret-vault-plugin) both live here, as a
+# (hashicorp-vault, crate busbar-hashicorp-vault) and the thin dlopen ABI adapter that packages it as a
+# busbar plugin (hashicorp-vault-plugin, crate busbar-hashicorp-vault-plugin) both live here, as a
 # same-repo Cargo workspace — not split across this repo and busbarAI. Only busbar-api/
 # busbar-plugin-sdk (and, for the adapter's dev-dependencies, busbar-plugin-loader/
 # busbar-plugin-abi) still reach into a sibling busbarAI checkout, since those are core-engine
@@ -11,6 +11,6 @@
 [workspace]
 resolver = "2"
 members = [
-    "secret-vault",
-    "secret-vault-plugin",
+    "hashicorp-vault",
+    "hashicorp-vault-plugin",
 ]

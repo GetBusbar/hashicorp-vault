@@ -1,4 +1,4 @@
-# Release: on a version tag (e.g. v1.0.0), build the secret-vault plugin cdylib for all 5
+# Release: on a version tag (e.g. v1.0.0), build the hashicorp-vault plugin cdylib for all 5
 # supported targets, pack + sign each into a loadable busbar plugin tarball, and publish them to
 # THIS repo's own GitHub Release.
 #
@@ -41,7 +41,7 @@ jobs:
         run: |
           gh release create "${GITHUB_REF_NAME}" \
             --repo "${GITHUB_REPOSITORY}" \
-            --title "busbar-secret-vault ${GITHUB_REF_NAME}" \
+            --title "busbar-hashicorp-vault ${GITHUB_REF_NAME}" \
             --verify-tag --generate-notes \
           || gh release view "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}"
 
@@ -80,10 +80,10 @@ jobs:
             libext: dll
             libprefix: ""
     steps:
-      - name: Checkout secret-vault
+      - name: Checkout hashicorp-vault
         uses: actions/checkout@v7
         with:
-          path: secret-vault
+          path: hashicorp-vault
 
       - name: Checkout busbar (sibling path dependency)
         uses: actions/checkout@v7
@@ -97,8 +97,8 @@ jobs:
           targets: ${{ matrix.target }}
       - uses: Swatinem/rust-cache@v2
 
-      - name: Build the secret-vault plugin cdylib
-        working-directory: secret-vault
+      - name: Build the hashicorp-vault plugin cdylib
+        working-directory: hashicorp-vault
         run: cargo build --release --target ${{ matrix.target }}
         shell: bash
 
@@ -122,14 +122,14 @@ jobs:
             echo "::warning::BUSBAR_SIGN_KEY secret is not provisioned — packaging an UNSIGNED plugin tarball (loadable only under plugins.trust.allow_unsigned). See busbarAI's release.yml TODO(release-keys) seam."
             unsigned_flag="--allow-unsigned"
           fi
-          lib="secret-vault/target/${target}/release/${{ matrix.libprefix }}busbar_secret_vault_plugin.${{ matrix.libext }}"
+          lib="hashicorp-vault/target/${target}/release/${{ matrix.libprefix }}busbar_hashicorp_vault_plugin.${{ matrix.libext }}"
           "$pack" pack \
             --lib "$lib" \
-            --name "busbar-secret-vault" --alias "vault" --kind secret \
+            --name "busbar-hashicorp-vault" --alias "vault" --kind secret \
             --version "$ver" --publisher busbar \
             --description "The HashiCorp Vault secret backend as a droppable busbar plugin — a cdylib exporting the secret C ABI. Drop it in the plugins folder, add vault to secrets: with its addr/token settings, and reference secrets as { module: vault, settings: { path: \"kv/data/name#field\" } }." \
             --license Apache-2.0 \
-            --out "${outdir}/busbar-secret-vault-${ver}-${target}.tar.gz" \
+            --out "${outdir}/busbar-hashicorp-vault-${ver}-${target}.tar.gz" \
             $unsigned_flag
           ls -l "$outdir"
         shell: bash
