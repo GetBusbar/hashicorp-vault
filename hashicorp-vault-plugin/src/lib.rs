@@ -33,9 +33,12 @@ use busbar_hashicorp_vault::{VaultConfig, VaultSecretModule};
 /// failure to every `resolve()` call.
 fn open(cfg: &str) -> Result<Box<dyn SecretModule>, String> {
     let cfg: VaultConfig = if cfg.trim().is_empty() {
-        return Err("hashicorp-vault plugin requires config (addr, token); none provided".to_string());
+        return Err(
+            "hashicorp-vault plugin requires config (addr, token); none provided".to_string(),
+        );
     } else {
-        serde_json::from_str(cfg).map_err(|e| format!("invalid hashicorp-vault plugin config: {e}"))?
+        serde_json::from_str(cfg)
+            .map_err(|e| format!("invalid hashicorp-vault plugin config: {e}"))?
     };
     Ok(Box::new(VaultSecretModule::new(&cfg)?))
 }
