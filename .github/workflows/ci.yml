@@ -17,9 +17,9 @@ name: ci
 
 on:
   push:
-    branches: [main, dev]
+    branches: [main, dev, qa]
   pull_request:
-    branches: [main, dev]
+    branches: [main, dev, qa]
 
 jobs:
   ci:
@@ -29,4 +29,4 @@ jobs:
       plugin_kind: secret
       plugin_alias: vault
       service: vault
-      busbar_ref: dev
+      busbar_ref: ${{ github.ref_name }} # same-branch: qa builds core qa, dev builds core dev (no stale main/tag)
