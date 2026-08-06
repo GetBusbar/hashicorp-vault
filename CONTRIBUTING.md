@@ -14,7 +14,7 @@ to build, test, and submit changes.
 ## Development setup
 
 `hashicorp-vault` is a Rust `cdylib` plugin. You need a recent stable toolchain
-(`rustup` recommended), and — until [busbarAI](https://github.com/GetBusbar/busbarAI)
+(`rustup` recommended), and — until [busbarAI](https://github.com/GetBusbar/busbar)
 ships publicly — a sibling checkout of it at `../busbarAI`, since this crate's
 `Cargo.toml` points at busbar's crates as local path dependencies. See the
 README's [Dependencies](README.md#dependencies) section for the exact layout;
@@ -61,7 +61,7 @@ for its real logic:
   `cdylib` adapter: turns the engine's JSON config into a `VaultConfig`/
   `VaultSecretModule` (from the sibling `hashicorp-vault` crate) and hands the
   trait object to
-  [`busbar-plugin-sdk`](https://github.com/GetBusbar/busbarAI/tree/main/crates/plugin-sdk),
+  [`busbar-plugin-sdk`](https://github.com/GetBusbar/busbar/tree/main/crates/plugin-sdk),
   which emits the C ABI symbols the loader resolves.
 
 Changes to the ABI-crossing seam (`hashicorp-vault-plugin/src/lib.rs`) deserve

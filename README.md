@@ -15,7 +15,7 @@ one field out of a `kv-v2` entry and authenticating with a pre-obtained
 `X-Vault-Token`.
 
 It is a `cdylib` that implements busbar's `SecretModule` trait (via
-[`busbar-plugin-sdk`](https://github.com/GetBusbar/busbarAI/tree/main/crates/plugin-sdk))
+[`busbar-plugin-sdk`](https://github.com/GetBusbar/busbar/tree/main/crates/plugin-sdk))
 and is loaded in-process by busbar over the signed hybrid plugin ABI —
 `dlopen`'d, not spawned as a separate process.
 
@@ -62,7 +62,7 @@ AppRole/Kubernetes login flows are a natural future extension of
 ## Build
 
 Needs a Rust toolchain ([rustup](https://rustup.rs)), and — interim,
-until [busbarAI](https://github.com/GetBusbar/busbarAI) ships publicly —
+until [busbarAI](https://github.com/GetBusbar/busbar) ships publicly —
 a sibling checkout of `busbarAI` at `../busbarAI` (see
 [Dependencies](#dependencies) below).
 
@@ -80,7 +80,7 @@ path dependency (`../hashicorp-vault`) — the real logic lives in this repo,
 not busbarAI. Only the core-engine contracts every plugin depends on the
 same way — `busbar-api`, `busbar-plugin-sdk` (and, as dev-dependencies for
 the end-to-end test, `busbar-plugin-loader` and `busbar-plugin-abi`) —
-still reach into the [busbarAI](https://github.com/GetBusbar/busbarAI)
+still reach into the [busbarAI](https://github.com/GetBusbar/busbar)
 monorepo. Because busbarAI is not yet public, `Cargo.toml` points at these
 as **local path dependencies** (`../../busbarAI/crates/...`), which means
 this repo expects to be checked out as a sibling of `busbarAI`:
@@ -101,7 +101,7 @@ become git (pinned rev/tag) or crates.io dependencies instead. Grep
 
 Once built, the cdylib is packed and signed like any other busbar plugin
 — see
-[`docs/plugins.md`](https://github.com/GetBusbar/busbarAI/blob/main/docs/plugins.md#signing-and-packaging)
+[`docs/plugins.md`](https://github.com/GetBusbar/busbar/blob/main/docs/plugins.md#signing-and-packaging)
 in busbarAI for the full reference. In short:
 
 ```sh
@@ -120,7 +120,7 @@ For local development without a signing key, `busbar-plugin-pack pack
 Drop the resulting tarball into busbar's configured `plugins.dir`, add a
 `secrets:` entry naming the module's own open-time config (the Vault
 address + token), and reference it from any secret field — see
-[`docs/plugins.md`](https://github.com/GetBusbar/busbarAI/blob/main/docs/plugins.md#secret-plugins-kind-secret)
+[`docs/plugins.md`](https://github.com/GetBusbar/busbar/blob/main/docs/plugins.md#secret-plugins-kind-secret)
 for the full `secrets:` wiring reference. Example: enable the plugin and
 point `plugins.enabled: true` at a directory containing the tarball, then
 
