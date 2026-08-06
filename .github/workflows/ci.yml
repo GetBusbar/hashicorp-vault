@@ -1,15 +1,11 @@
 # Calls the canonical plugin-ci reusable workflow (GetBusbar/busbar/.github/workflows/plugin-ci.yml)
 # instead of hand-copying build/test/signoff steps here — see that file for what actually runs.
 #
-# This repo used to hand-roll its own vault: service block because plugin-ci.yml's `service` input
-# only supported `none | postgres | valkey` (that store option was spelled `redis` before the
-# 1.5.3 rename). That gap is closed: a `vault` option was added to plugin-ci.yml, so this repo now
-# uses the same thin `uses:` wrapper auth-oidc/store-sqlite/store-postgres/store-valkey use, with
-# `service: vault`. No `extra_sibling_test_command` —
-# busbarAI no longer carries crates/hashicorp-vault or crates/hashicorp-vault-plugin in-tree (this
-# repo's own test suite, run above, IS the real-Vault-backed proof now; see busbarAI's
-# release-check.sh Phase 3.5 and its removal commit for how the monorepo gates on this repo
-# instead).
+# `service: vault` stands up the Vault dev server the test suite binds against, the same thin
+# `uses:` wrapper auth-oidc/store-sqlite/store-postgres/store-valkey use for their own services.
+# No `extra_sibling_test_command`: busbarAI does not carry crates/hashicorp-vault or
+# crates/hashicorp-vault-plugin in-tree, so this repo's own test suite, run above, is the
+# real-Vault-backed proof.
 #
 # Pinned to busbar's `dev` branch (not the stale 1.5.0-dev branch, which predates the
 # generic-credentials/store-schema redesign and the ScopeRef admission-topology generalization)
