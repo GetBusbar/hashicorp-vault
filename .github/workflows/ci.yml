@@ -24,6 +24,7 @@ on:
 jobs:
   ci:
     uses: GetBusbar/busbar/.github/workflows/plugin-ci.yml@dev
+    secrets: inherit
     with:
       plugin_crate: busbar-hashicorp-vault-plugin
       plugin_kind: secret
