@@ -34,3 +34,69 @@ jobs:
       # with an unreadable git error on EVERY pull request to this repo.
       # Same-branch intent is unchanged: qa builds core qa, dev builds core dev, never a
       # stale main or tag.
+
+  # ── coverage: ADDITIVE, INFORMATIONAL, and NOT a gate. It does not feed the `ci` job above and is
+  #    not a required status — a coverage delta can never block a PR (see codecov.yml:
+  #    status.*.informational). It measures ONLY this repo's own workspace members (hashicorp-vault +
+  #    hashicorp-vault-plugin); the busbarAI path-deps are dependencies, not workspace members, so
+  #    they are not instrumented. Mirrors busbarAI's own `coverage` job (llvm-cov → tokenless codecov).
+  coverage:
+    name: coverage (llvm-cov · codecov)
+    runs-on: ubuntu-latest
+    # Same tier gate as busbarAI's own coverage job: always on PRs and workflow_dispatch, and on
+    # pushes only to the long-lived branches — never a throwaway feature-branch push.
+    if: github.event_name != 'push' || contains(fromJSON('["refs/heads/main", "refs/heads/dev", "refs/heads/qa"]'), github.ref)
+    services:
+      # Real Vault dev-mode server — MIRRORS EXACTLY the `vault` service the reusable plugin-ci.yml
+      # boots for this repo's own test leg (same digest-pinned image, VAULT_DEV_ROOT_TOKEN_ID=root,
+      # port 8200, --cap-add=IPC_LOCK, and the /v1/sys/health wget healthcheck), so the live-Vault
+      # tests are wired here the same way they are under `cargo test`.
+      vault:
+        image: hashicorp/vault@sha256:5be49781ecf78bfe775c5309c6a4d9f4e9e040b6c885c99eb2b12fb69855e1a2
+        env:
+          VAULT_DEV_ROOT_TOKEN_ID: root
+        ports:
+          - 8200:8200
+        options: >-
+          --cap-add=IPC_LOCK
+          --health-cmd "wget -qO- http://127.0.0.1:8200/v1/sys/health"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout the plugin
+        uses: actions/checkout@v7
+        with:
+          path: plugin
+      # The workspace's Cargo.toml path-deps reach into a sibling busbarAI checkout (../../busbarAI)
+      # for busbar-api / busbar-plugin-sdk / busbar-plugin-loader / busbar-plugin-abi, so the plugin
+      # cannot compile without it. Pinned to the SHA in .busbar-ref — the exact busbar this repo's
+      # release builds against, and what Cargo.lock resolved against, so `--locked` holds.
+      - name: Checkout busbar (sibling path dependency, pinned to .busbar-ref)
+        uses: actions/checkout@v7
+        with:
+          repository: GetBusbar/busbar
+          ref: c8780349cf66d09b891478d50766b89dc1ff224c
+          path: busbarAI
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: plugin
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+      - name: Collect coverage (workspace, live-Vault tests wired)
+        working-directory: plugin
+        env:
+          BUSBAR_TEST_VAULT_ADDR: http://127.0.0.1:8200
+          BUSBAR_TEST_VAULT_TOKEN: root
+        run: cargo llvm-cov --workspace --locked --lcov --output-path lcov.info
+      - name: Upload to Codecov (tokenless; never fails the build)
+        uses: codecov/codecov-action@v5
+        with:
+          files: plugin/lcov.info
+          slug: GetBusbar/hashicorp-vault
+          fail_ci_if_error: false

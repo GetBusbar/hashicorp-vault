@@ -5,6 +5,7 @@ itself — see [Versioning](#versioning) below.)
 
 [![CI](https://github.com/GetBusbar/hashicorp-vault/actions/workflows/ci.yml/badge.svg)](https://github.com/GetBusbar/hashicorp-vault/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/GetBusbar/hashicorp-vault)](https://github.com/GetBusbar/hashicorp-vault/releases)
+[![Coverage](https://codecov.io/gh/GetBusbar/hashicorp-vault/branch/dev/graph/badge.svg)](https://codecov.io/gh/GetBusbar/hashicorp-vault)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
 The first-party, signed `kind: secret` plugin for
